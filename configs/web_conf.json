@@ -1,0 +1,26 @@
+{
+  "local": {
+    "base_url": "https://demoblaze.com/index.html",
+    "usr": "demo-auto@gmail.com",
+    "pwd": "123456",
+    "timeout": 0
+  },
+  "sit": {
+    "base_url": "https://demoblaze.com/index.html",
+    "usr": "demo-auto@gmail.com",
+    "pwd": "123456",
+    "timeout": 0
+  },
+  "uat": {
+    "base_url": "https://demoblaze.com/index.html",
+    "usr": "demo-auto@gmail.com",
+    "pwd": "123456",
+    "timeout": 0
+  },
+  "prod": {
+    "base_url": "https://demoblaze.com/index.html",
+    "usr": "demo-auto@gmail.com",
+    "pwd": "123456",
+    "timeout": 0
+  }
+}
