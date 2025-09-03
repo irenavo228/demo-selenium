@@ -4,14 +4,11 @@ python -m venv .venv
 .\.venv\Scripts\activate         # on Windows PowerShell)
 
 # 2. Install libs
-pip install playwright beautifulsoup4 pytest pytest-rerunfailures pytest-order allure-pytest docker
-playwright install
-
-# 3. Install hết lib từ file requirements
 pip install -r requirements.txt
+playwright install chromium firefox
 
+# 3. Run test
+pytest --browser=chromium --env=local --mode=headed tests/test_login.py -v
 
-Tạo sẵn image trên Docker:
+# 4. Build image on Docker:
 docker buildx build -t demo-playwright-session:latest ../demo-playwright-session
-
-
