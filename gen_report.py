@@ -10,9 +10,9 @@ def run_tests_and_generate_report():
     print("Running tests and generating allure results...")
     subprocess.run(["pytest", "--alluredir", allure_results_dir], check=True)
     print("Generating allure report...")
-    subprocess.run(["allure", "generate", allure_results_dir, "-o", allure_report_dir, "--clean"], check=True)
+    subprocess.run(["npx", "allure", "generate", allure_results_dir, "-o", allure_report_dir, "--clean"], check=True, shell=True)
     print("Opening allure report...")
-    subprocess.run(["allure", "open", allure_report_dir], check=True)
+    subprocess.run(["npx", "allure", "open", allure_report_dir], check=True, shell=True)
 
 
 if __name__ == "__main__":
