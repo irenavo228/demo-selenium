@@ -1,7 +1,10 @@
 import time
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait, Select
+from selenium.webdriver.support import expected_conditions as EC
 
 DEFAULT_SLEEP_TIME = 0.005
-DEFAULT_TIMEOUT = 0
+DEFAULT_TIMEOUT = 10
 DEFAULT_ZOOM_PERCENT = 100
 
 
@@ -17,89 +20,115 @@ class BasePage:
     def format_locator(locator_template, value):
         return locator_template.format(value)
 
-    # Use Playwright CSS Selector
-    def click_element(self, locator: str):
-        self.driver.locator(locator).click()
+    # Use Selenium XPath
+    def click_element(self, locator: str, timeout: int=DEFAULT_TIMEOUT):
+        element = self.wait_element_to_be_clickable(locator, timeout)
+        element.click()
 
-    def input_element(self, locator: str, text: str):
-        self.driver.locator(locator).fill(text)
+    def input_element(self, locator: str, text: str, timeout: int=DEFAULT_TIMEOUT):
+        element = self.wait_element_to_be_clickable(locator, timeout)
+        element.clear()
+        element.send_keys(text)
 
     def clear_element(self, locator: str):
-        self.driver.locator(locator).fill("")
+        self.driver.find_element(By.XPATH, locator).clear()
 
     def enter_element(self, locator: str):
-        self.driver.locator(locator).press('Enter')
+        self.driver.find_element(By.XPATH, locator).send_keys(u"\ue007")  # Keys.ENTER
 
     def tab_element(self, locator: str):
-        self.driver.locator(locator).press('Tab')
+        self.driver.find_element(By.XPATH, locator).send_keys(u"\ue004")  # Keys.TAB
 
     def wait_element_to_be_clickable(self, locator: str, timeout: int = DEFAULT_TIMEOUT):
-        return self.driver.locator(locator).wait_for(state="attached", timeout=timeout)
+        return WebDriverWait(self.driver, timeout).until(
+            EC.element_to_be_clickable((By.XPATH, locator))
+        )
 
     def wait_element_to_be_visible(self, locator: str, timeout: int = DEFAULT_TIMEOUT):
-        return self.driver.locator(locator).wait_for(state="visible", timeout=timeout)
+        return WebDriverWait(self.driver, timeout).until(
+            EC.visibility_of_element_located((By.XPATH, locator))
+        )
 
     def wait_element_to_be_hidden(self, locator: str, timeout: int = DEFAULT_TIMEOUT):
-        return self.driver.locator(locator).wait_for(state="hidden", timeout=timeout)
+        return WebDriverWait(self.driver, timeout).until(
+            EC.invisibility_of_element_located((By.XPATH, locator))
+        )
+
+    def waitForLoadState(self, timeout=DEFAULT_TIMEOUT):
+        wait = WebDriverWait(self.driver, timeout)
+        wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
+        wait.until(lambda d: d.find_element("tag name", "body"))
+
+        def no_pending_requests(d):
+            return d.execute_script("""
+                return window.performance.getEntriesByType('resource')
+                .filter(r => ['xmlhttprequest','fetch'].includes(r.initiatorType)).length
+            """) == 0
+
+        wait.until(no_pending_requests)
+
+        return True
 
     def scroll_to_bottom(self):
-        self.driver.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
     def scroll_to_element(self, locator: str):
-        element = self.driver.locator(locator)
-        element.scroll_into_view_if_needed()
+        el = self.driver.find_element(By.XPATH, locator)
+        self.driver.execute_script("arguments[0].scrollIntoView(true);", el)
 
     def refresh(self):
-        self.driver.reload()
+        self.driver.refresh()
 
     def clear_cache(self):
-        context = self.driver.context
-        context.clear_cookies()
-        self.driver.evaluate("window.localStorage.clear();")
-        self.driver.evaluate("window.sessionStorage.clear();")
+        self.driver.delete_all_cookies()
+        self.driver.execute_script("window.localStorage.clear();")
+        self.driver.execute_script("window.sessionStorage.clear();")
 
     def navigate_to(self, url: str):
-        self.driver.goto(url)
+        self.driver.get(url)
 
     def get_current_url(self) -> str:
-        return self.driver.url
+        return self.driver.current_url
 
     def get_page_title(self) -> str:
-        return self.driver.title()
+        return self.driver.title
 
     def get_page_source(self) -> str:
-        return self.driver.content()
+        return self.driver.page_source
 
     def get_element_text(self, locator: str) -> str:
-        return self.driver.locator(locator).text_content()
+        return self.driver.find_element(By.XPATH, locator).text
 
     def get_element_attribute(self, locator: str, attribute: str) -> str:
-        return self.driver.locator(locator).get_attribute(attribute)
+        return self.driver.find_element(By.XPATH, locator).get_attribute(attribute)
 
     def count_elements(self, locator: str) -> int:
-        return self.driver.locator(locator).count()
+        return len(self.driver.find_elements(By.XPATH, locator))
 
     def is_element_present(self, locator: str) -> bool:
-        return self.driver.locator(locator).count() > 0
+        return len(self.driver.find_elements(By.XPATH, locator)) > 0
 
     def is_element_enabled(self, locator: str) -> bool:
-        return self.driver.locator(locator).is_enabled()
+        return self.driver.find_element(By.XPATH, locator).is_enabled()
 
     def is_element_disabled(self, locator: str) -> bool:
-        return not self.driver.locator(locator).is_enabled()
+        return not self.driver.find_element(By.XPATH, locator).is_enabled()
 
     def select_by_visible_text(self, locator: str, text: str):
-        self.driver.locator(locator).select_option(label=text)
+        select = Select(self.driver.find_element(By.XPATH, locator))
+        select.select_by_visible_text(text)
 
     def select_by_value(self, locator: str, value: str):
-        self.driver.locator(locator).select_option(value=value)
+        select = Select(self.driver.find_element(By.XPATH, locator))
+        select.select_by_value(value)
 
     def select_by_index(self, locator: str, index: int):
-        self.driver.locator(locator).select_option(index=index)
+        select = Select(self.driver.find_element(By.XPATH, locator))
+        select.select_by_index(index)
 
     def zoom_browser(self, zoom_percentage=DEFAULT_ZOOM_PERCENT):
-        self.driver.evaluate(f"document.body.style.zoom = '{zoom_percentage}%'")
-        self.driver.evaluate("document.body.style.overflow = 'auto';")
+        self.driver.execute_script(f"document.body.style.zoom='{zoom_percentage}%'")
+        self.driver.execute_script("document.body.style.overflow='auto';")
 
     # Use Beautiful Soup
     def soup_get_page_title(self, soup):

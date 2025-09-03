@@ -17,7 +17,6 @@ COPY requirements.txt /app/
 
 RUN /app/venv/bin/pip install --upgrade pip \
     && /app/venv/bin/pip install -r requirements.txt \
-    && /app/venv/bin/python -m playwright install
 
 COPY . /app
 

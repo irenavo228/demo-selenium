@@ -1,17 +1,21 @@
 import pytest
 import os
-from playwright.sync_api import sync_playwright
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.firefox.service import Service as FirefoxService
+
 from pages.login import LoginPage
 from common.base_test import BaseTest
 from utils.helpers import get_full_path, load_config, read_csv
-
 
 web_conf = get_full_path("configs/web_conf.json")
 test_results = {}
 
 
 def pytest_addoption(parser):
-    parser.addoption("--browser", action="store", default="chromium", help="Choose browser: chromium, firefox, webkit")
+    parser.addoption("--browser", action="store", default="chrome", help="Choose browser: chrome, firefox")
     parser.addoption("--env", action="store", default="local", help="Choose environment: local, sit, uat, prod")
     parser.addoption("--mode", action="store", default="headless", help="Choose mode: head, headless")
 
@@ -66,17 +70,41 @@ def pytest_runtest_makereport(item):
 
 @pytest.fixture(scope="session")
 def get_driver(request):
-    browser_conf = request.config.getoption("--browser")
+    browser_name = request.config.getoption("--browser").lower()
     mode_conf = request.config.getoption("--mode")
 
-    isHeadless_conf = True if mode_conf == "headless" else False
+    driver = None
 
-    with sync_playwright() as p:
-        browser = getattr(p, browser_conf).launch(headless=isHeadless_conf)
-        context = browser.new_context()
-        driver = context.new_page()
-        yield driver
-        browser.close()
+    if browser_name == "chrome":
+        options = ChromeOptions()
+        if mode_conf == "headless":
+            options.add_argument("--headless")
+            options.add_argument("--disable-gpu")
+            options.add_argument("--no-sandbox")
+
+        driver_path = get_full_path("drivers/chromedriver.exe") # Windows
+        # driver_path = "/usr/local/bin/chromedriver"  # Linux/Mac
+
+        service = ChromeService(executable_path=driver_path)
+        driver = webdriver.Chrome(service=service, options=options)
+
+    elif browser_name == "firefox":
+        options = FirefoxOptions()
+        if mode_conf == "headless":
+            options.add_argument("--headless")
+
+        driver_path = get_full_path("drivers/geckodriver.exe")  # Windows
+        # driver_path = "/usr/local/bin/geckodriver"  # Linux/Mac
+
+        service = FirefoxService(executable_path=driver_path)
+        driver = webdriver.Firefox(service=service, options=options)
+
+    else:
+        raise ValueError(f"Unsupported browser: {browser_name}")
+
+    driver.maximize_window()
+    yield driver
+    driver.quit()
 
 
 @pytest.fixture(scope="session")
@@ -90,7 +118,7 @@ def get_source(request):
 def setup_web(get_driver, get_source):
     driver = get_driver
     web = get_source
-    driver.goto(web["base_url"])
+    driver.get(web["base_url"])
     yield driver, web["base_url"], web["usr"], web["pwd"]
 
 

@@ -1,5 +1,6 @@
 from common.base_page import BasePage
 from locators.login import LoginLocator
+from selenium.webdriver.common.by import By
 
 
 class LoginPage(BasePage):
@@ -8,8 +9,8 @@ class LoginPage(BasePage):
         super().__init__(driver)
 
     def login(self, usr, pwd):
-        self.click_element("a#login2")
-        self.clear_element(LoginLocator.TXT_USER)
+        self.click_element(LoginLocator.BTN_ACTION)
+        self.click_element(LoginLocator.TXT_USER)
         self.input_element(LoginLocator.TXT_USER, usr)
         self.clear_element(LoginLocator.TXT_PASS)
         self.input_element(LoginLocator.TXT_PASS, pwd)
